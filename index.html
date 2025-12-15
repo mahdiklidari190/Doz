@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>دوز - هوش مصنوعی واقعاً از صفر</title>
+    <title>دوز - AI یادگیرنده از کاربر</title>
     <style>
         * {
             margin: 0;
@@ -194,7 +194,7 @@
 <body>
     <div class="container">
         <h1>بازی دوز</h1>
-        <p class="subtitle">هوش مصنوعی که از صفر شروع می‌کند</p>
+        <p class="subtitle">هوش مصنوعی که از هر بازی با شما یاد می‌گیرد</p>
         
         <div class="stats">
             <div class="stat-item">
@@ -215,7 +215,7 @@
             </div>
             <div class="stat-item">
                 <span>نرخ کاوش (ε):</span>
-                <span id="epsilon">0.90</span>
+                <span id="epsilon">0.95</span>
             </div>
         </div>
 
@@ -242,7 +242,7 @@
 
         <div class="controls">
             <button class="btn-primary" onclick="startNewGame()">بازی جدید</button>
-            <button class="btn-secondary" onclick="trainAI(1000)">آموزش ×۱۰۰۰</button>
+            <button class="btn-secondary" onclick="trainAI(1000)">آموزش سریع ×۱۰۰۰</button>
             <button class="btn-danger" onclick="resetLearning()">پاک کردن دانش</button>
         </div>
     </div>
@@ -251,14 +251,14 @@
         // ==================== هوش مصنوعی پیشرفته ====================
         class TicTacToeAI {
             constructor() {
-                this.qTable = {};
-                this.epsilon = 0.95; // نرخ کاوش بالا برای شروع
+                this.qTable = {};           // Q-table: کلید = "state|action"
+                this.visitCounts = {};      // شمارش دیده شدن هر حالت
+                this.epsilon = 0.95;        // نرخ کاوش بالا
                 this.epsilonMin = 0.02;
-                this.epsilonDecay = 0.998; // کندتر کاهش می‌یابد
-                this.alpha = 0.8; // نرخ یادگیری بالاتر
-                this.gamma = 0.95; // تخفیف زمانی - حرکات آخر مهم‌ترند
-                this.trainingHistory = [];
-                this.visitCounts = {}; // شمارش دفعات دیده شدن هر حالت
+                this.epsilonDecay = 0.998;
+                this.alpha = 0.7;           // نرخ یادگیری
+                this.gamma = 0.95;          // تخفیف زمانی
+                this.gameHistory = [];      // تاریخچه کامل بازی
             }
 
             stateToString(board) {
@@ -284,7 +284,7 @@
                 
                 if (actions.length === 0) return null;
 
-                // ε-greedy: تصادفی یا بهترین
+                // ε-greedy کاوش
                 if (training && Math.random() < this.epsilon) {
                     return actions[Math.floor(Math.random() * actions.length)];
                 }
@@ -304,42 +304,47 @@
                 return bestAction;
             }
 
-            train(board, action) {
+            // ==================== سیستم یادگیری کامل ====================
+            recordMove(board, player, action) {
                 const state = this.stateToString(board);
-                this.trainingHistory.push({ state, action });
+                this.gameHistory.push({
+                    state: state,
+                    action: action,
+                    player: player
+                });
+                // شمارش دیده شدن
+                const key = `${state}|${action}`;
+                this.visitCounts[key] = (this.visitCounts[key] || 0) + 1;
             }
 
-            // ==================== به‌روزرسانی هوشمند ====================
-            updateQValues(finalReward) {
-                const n = this.trainingHistory.length;
+            updateFromGame(finalResult) {
+                // نتیجه: 'X', 'O', یا 'draw'
+                // finalReward از دید AI: +1 برد AI، -1 باخت AI، 0 مساوی
+                const finalReward = finalResult === 'X' ? 1 : (finalResult === 'O' ? -1 : 0);
                 
-                // برای هر حرکت در مسیر، با پاداش تخفیفی به‌روز می‌شود
-                for (let i = 0; i < n; i++) {
-                    const { state, action } = this.trainingHistory[i];
-                    const key = `${state}|${action}`;
+                // به‌روزرسانی معکوس تمام حرکات
+                const n = this.gameHistory.length;
+                
+                for (let i = n - 1; i >= 0; i--) {
+                    const move = this.gameHistory[i];
+                    const key = `${move.state}|${move.action}`;
                     
-                    // هر چه حرکت به انتهای بازی نزدیک‌تر، پاداش بیشتر
-                    // gamma^(n-i-1) این کار را می‌کند
+                    // پاداش تخفیفی: هرچه به انتهای بازی نزدیک‌تر باشد، تأثیر بیشتر
                     const discountedReward = finalReward * Math.pow(this.gamma, n - i - 1);
                     
-                    const oldValue = this.qTable[key];
-                    // نرخ یادگیری متغیر: هرچه بیشتر ببیند، کمتر یاد می‌گیرد
-                    const visitCount = this.getVisitCount(state, action);
-                    const adaptiveAlpha = this.alpha / (1 + 0.01 * visitCount);
+                    // نرخ یادگیری تطبیقی: هرچه بیشتر ببیند، کمتر تغییر می‌کند
+                    const visitCount = this.visitCounts[key] || 1;
+                    const adaptiveAlpha = this.alpha / (1 + 0.02 * visitCount);
                     
-                    // معادله به‌روزرسانی Q-Learning
+                    // به‌روزرسانی Q-value
+                    const oldValue = this.qTable[key];
                     this.qTable[key] = oldValue + adaptiveAlpha * (discountedReward - oldValue);
                 }
                 
-                this.trainingHistory = [];
-                // کاهش epsilon برای کاوش کمتر در آینده
+                // پاک کردن تاریخچه برای بازی بعدی
+                this.gameHistory = [];
+                // کاهش epsilon برای کاوش کمتر
                 this.epsilon = Math.max(this.epsilonMin, this.epsilon * this.epsilonDecay);
-            }
-
-            getVisitCount(state, action) {
-                const key = `${state}|${action}`;
-                this.visitCounts[key] = (this.visitCounts[key] || 0) + 1;
-                return this.visitCounts[key];
             }
 
             checkWinner(board) {
@@ -369,11 +374,11 @@
                     losses: gameStats.userWins,
                     draws: gameStats.draws
                 };
-                localStorage.setItem('ttt-ai-data-v2', JSON.stringify(data));
+                localStorage.setItem('ttt-ai-data-v4', JSON.stringify(data));
             }
 
             loadFromStorage() {
-                const saved = localStorage.getItem('ttt-ai-data-v2');
+                const saved = localStorage.getItem('ttt-ai-data-v4');
                 if (saved) {
                     try {
                         const data = JSON.parse(saved);
@@ -397,7 +402,7 @@
                 this.qTable = {};
                 this.visitCounts = {};
                 this.epsilon = 0.95;
-                this.trainingHistory = [];
+                this.gameHistory = [];
             }
         }
 
@@ -470,34 +475,26 @@
         function checkGameEnd() {
             const result = ai.checkWinner(board);
             
-            if (result === 'X') {
+            if (result) {
                 gameStats.totalGames++;
-                gameStats.aiWins++;
-                gameActive = false;
-                highlightWinner('X');
-                showMessage("AI برنده شد! 🎉");
-                ai.updateQValues(1); // پاداش برد
+                
+                if (result === 'X') {
+                    gameStats.aiWins++;
+                    highlightWinner('X');
+                    showMessage("AI برنده شد! 🎉");
+                } else if (result === 'O') {
+                    gameStats.userWins++;
+                    highlightWinner('O');
+                    showMessage("شما برنده شدید! تبریک! 🎊");
+                } else if (result === 'draw') {
+                    gameStats.draws++;
+                    showMessage("مساوی شد! 🤝");
+                }
+                
+                ai.updateFromGame(result);
                 ai.saveToStorage();
                 updateStats();
-                return true;
-            } else if (result === 'O') {
-                gameStats.totalGames++;
-                gameStats.userWins++;
                 gameActive = false;
-                highlightWinner('O');
-                showMessage("شما برنده شدید! تبریک! 🎊");
-                ai.updateQValues(-1); // جریمه باخت
-                ai.saveToStorage();
-                updateStats();
-                return true;
-            } else if (result === 'draw') {
-                gameStats.totalGames++;
-                gameStats.draws++;
-                gameActive = false;
-                showMessage("مساوی شد! 🤝");
-                ai.updateQValues(0); // پاداش خنثی
-                ai.saveToStorage();
-                updateStats();
                 return true;
             }
             
@@ -510,7 +507,7 @@
             const action = ai.chooseAction(board, false);
             if (action !== null) {
                 board[action] = 'X';
-                ai.train(board, action);
+                ai.recordMove(board, 'X', action);
                 renderBoard();
                 
                 if (!checkGameEnd()) {
@@ -524,12 +521,13 @@
             if (!gameActive || currentPlayer !== 'user' || board[idx]) return;
             
             board[idx] = 'O';
+            ai.recordMove(board, 'O', idx);
             renderBoard();
             
             if (!checkGameEnd()) {
                 currentPlayer = 'ai';
                 showMessage("AI در حال فکر کردن...");
-                setTimeout(aiMove, 500); // تأخیر کوتاه برای UX بهتر
+                setTimeout(aiMove, 500);
             }
         }
 
@@ -541,40 +539,35 @@
             showMessage("نوبت شماست! روی هر خانه کلیک کنید.");
         }
 
-        // ==================== آموزش ====================
+        // ==================== آموزش خودکار ====================
         async function trainAI(numGames) {
             showTraining(true);
             const startEpsilon = ai.epsilon;
             
             for (let i = 0; i < numGames; i++) {
-                // بازی آموزشی خود-بازی (Self-play)
+                // Self-play بازی
                 let trainingBoard = Array(9).fill(null);
-                let trainingHistory = [];
                 let player = 'X';
+                ai.gameHistory = []; // پاک کردن تاریخچه قبلی
                 
                 while (true) {
                     const result = ai.checkWinner(trainingBoard);
                     if (result !== null) {
-                        // به‌روزرسانی با پاداش نهایی
-                        const reward = result === 'X' ? 1 : (result === 'O' ? -1 : 0);
-                        ai.trainingHistory = trainingHistory;
-                        ai.updateQValues(reward);
+                        ai.updateFromGame(result);
                         break;
                     }
                     
                     const action = ai.chooseAction(trainingBoard, true);
                     if (action === null) break;
                     
-                    const state = ai.stateToString(trainingBoard);
-                    trainingHistory.push({ state, action });
                     trainingBoard[action] = player;
+                    ai.recordMove(trainingBoard, player, action);
                     player = player === 'X' ? 'O' : 'X';
                 }
                 
-                // به‌روزرسانی پیشرفت هر ۵۰ بازی
                 if (i % 50 === 0) {
                     updateProgress(i, numGames);
-                    await new Promise(resolve => setTimeout(resolve, 0)); // آزاد کردن رشته UI
+                    await new Promise(resolve => setTimeout(resolve, 0));
                 }
             }
             
@@ -591,7 +584,7 @@
                 gameStats.aiWins = 0;
                 gameStats.userWins = 0;
                 gameStats.draws = 0;
-                localStorage.removeItem('ttt-ai-data-v2');
+                localStorage.removeItem('ttt-ai-data-v4');
                 updateStats();
                 startNewGame();
                 showMessage("دانش AI پاک شد! از صفر شروع می‌کند...");
