@@ -130,7 +130,7 @@ const STORAGE_STATS = 'ttt-advanced-stats-v1';
 class AdvancedTicTacToeAI {
     constructor() {
         this.q = {};          // Q-Table: {"state|a": value}
-        this.alpha = 0.6;     // نرخ یادگیری
+        this.alpha = 1;     // نرخ یادگیری
         this.gamma = 0.95;    // ضریب تنزیل
         this.epsilon = 0.9;   // شروع کاوش
         this.epsilonMin = 0.05;
