@@ -2,7 +2,7 @@
 <html lang="fa" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <title>دوز - AI با یادگیری از بردهای کاربر</title>
+    <title>دوز با AI پیشرفته (Q-Learning + Minimax)</title>
     <style>
         *{margin:0;padding:0;box-sizing:border-box}
         body{
@@ -11,32 +11,31 @@
             min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px
         }
         .container{
-            background:#fff;border-radius:20px;max-width:480px;width:100%;
+            background:#fff;border-radius:20px;max-width:520px;width:100%;
             padding:24px;box-shadow:0 18px 40px rgba(0,0,0,.25)
         }
-        h1{text-align:center;color:#667eea;margin-bottom:8px}
-        .subtitle{text-align:center;color:#666;margin-bottom:20px;font-size:.9em}
+        h1{text-align:center;color:#667eea;margin-bottom:6px}
+        .subtitle{text-align:center;color:#666;margin-bottom:14px;font-size:.9em}
         .board{
-            display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:20px
+            display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px
         }
         .cell{
             background:#f0f0f0;border:none;border-radius:12px;
             font-size:2.5em;font-weight:bold;color:#333;
             cursor:pointer;display:flex;align-items:center;justify-content:center;
-            aspect-ratio:1;transition:.2s
+            aspect-ratio:1;transition:.15s
         }
         .cell:hover:not(.occupied){background:#e0e0e0;transform:scale(.96)}
         .cell.x{color:#667eea}
         .cell.o{color:#764ba2}
         .cell.winner{background:#4caf50;color:#fff}
-        .stats{background:#f9f9f9;border-radius:10px;padding:10px 12px;margin-bottom:16px;font-size:.9em}
-        .stat-item{display:flex;justify-content:space-between;margin-bottom:4px;color:#555}
-        .stat-item:last-child{margin-bottom:0;font-weight:bold;color:#667eea;padding-top:4px;border-top:1px solid #e0e0e0}
-        .message{text-align:center;margin-bottom:10px;font-weight:600}
-        .controls{display:flex;gap:8px;flex-wrap:wrap}
+        .stats{background:#f9f9f9;border-radius:10px;padding:10px 12px;margin-bottom:10px;font-size:.85em}
+        .stat-row{display:flex;justify-content:space-between;margin-bottom:4px;color:#555}
+        .stat-row:last-child{margin-bottom:0;font-weight:bold;color:#667eea;padding-top:4px;border-top:1px solid #e0e0e0}
+        .controls{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
         button.ctrl{
-            flex:1;min-width:120px;border:none;border-radius:10px;padding:10px;
-            font-weight:600;cursor:pointer;transition:.2s
+            flex:1;min-width:120px;border:none;border-radius:10px;padding:8px 10px;
+            font-weight:600;cursor:pointer;transition:.15s;font-size:.9em
         }
         .primary{background:#667eea;color:#fff}
         .primary:hover{background:#5568d3}
@@ -44,32 +43,53 @@
         .secondary:hover{background:#e0e0e0}
         .danger{background:#f44336;color:#fff}
         .danger:hover{background:#d32f2f}
-        .small{font-size:.8em;margin-top:6px;color:#777;text-align:center}
-        .patterns-count{font-size:.85em;color:#444;text-align:center;margin-bottom:8px}
+        .message{text-align:center;margin:6px 0 4px;font-weight:600;font-size:.95em}
+        .small{text-align:center;font-size:.8em;color:#777}
+        .row{display:flex;justify-content:space-between;align-items:center;margin-top:6px;font-size:.8em;color:#555}
+        select, input[type="number"]{
+            font-size:.8em;padding:2px 4px;border-radius:6px;border:1px solid #ccc
+        }
     </style>
 </head>
 <body>
 <div class="container">
     <h1>بازی دوز</h1>
-    <p class="subtitle">AI از الگوهای برد شما یاد می‌گیرد و سعی می‌کند جلوی آن‌ها را بگیرد</p>
+    <p class="subtitle">AI پیشرفته با ترکیب Q-Learning و Minimax (یادگیرنده از بازی با شما)</p>
 
     <div class="stats">
-        <div class="stat-item">
+        <div class="stat-row">
             <span>بازی‌های انجام‌شده:</span><span id="totalGames">0</span>
         </div>
-        <div class="stat-item">
+        <div class="stat-row">
             <span>بردهای AI (X):</span><span id="aiWins">0</span>
         </div>
-        <div class="stat-item">
+        <div class="stat-row">
             <span>بردهای شما (O):</span><span id="userWins">0</span>
         </div>
-        <div class="stat-item">
+        <div class="stat-row">
             <span>مساوی‌ها:</span><span id="draws">0</span>
+        </div>
+        <div class="stat-row">
+            <span>الگوهای Q ذخیره‌شده:</span><span id="qCount">0</span>
         </div>
     </div>
 
-    <div class="patterns-count">
-        الگوهای برد ذخیره‌شده کاربر: <span id="patternCount">0</span>
+    <div class="row">
+        <span>حالت AI:</span>
+        <select id="modeSelect">
+            <option value="learn">یادگیری (Q-Learning)</option>
+            <option value="hybrid" selected>Hybrid (Q + Minimax)</option>
+            <option value="minimax">فقط Minimax (غیرقابل شکست)</option>
+        </select>
+        <span>ε:</span><span id="epsilonLabel">0.90</span>
+    </div>
+
+    <div class="row">
+        <span>آموزش خودکار (Self-Play):</span>
+        <span>
+            <input type="number" id="trainN" value="2000" min="100" step="100" style="width:70px">
+            <button class="ctrl secondary" style="min-width:70px;padding:2px 4px" onclick="trainSelfPlay()">شروع</button>
+        </span>
     </div>
 
     <div class="board" id="board">
@@ -84,271 +104,473 @@
         <button class="cell" data-index="8"></button>
     </div>
 
-    <div class="message" id="message">نوبت شماست! روی یک خانه کلیک کنید.</div>
-    <div class="small">X = AI ، O = شما. هر بار که شما برنده شوید، الگوی بردتان ذخیره می‌شود.</div>
+    <div class="message" id="message">نوبت شماست! شما O هستید، AI با X بازی می‌کند.</div>
+    <div class="small">Q-Learning از نتایج هر بازی (با شما و با خودش) یاد می‌گیرد و Minimax تضمین می‌کند اشتباهات فاحش نکند.</div>
 
     <div class="controls">
         <button class="ctrl primary" onclick="startNewGame()">بازی جدید</button>
-        <button class="ctrl secondary" onclick="resetMemory()">پاک‌کردن حافظه AI</button>
-        <button class="ctrl danger" onclick="resetAll()">ریست کامل (بازی + حافظه)</button>
+        <button class="ctrl secondary" onclick="resetQOnly()">پاک‌کردن Q-Table</button>
+        <button class="ctrl danger" onclick="fullReset()">ریست کامل (Q + آمار)</button>
     </div>
 </div>
 
 <script>
-    // ===== داده‌ها و وضعیت کلی =====
-    let board = Array(9).fill(null); // null, 'X', 'O'
-    let currentPlayer = 'user';      // 'user' یا 'ai'
-    let gameActive = true;
+/*
+الگوریتم:
+- Q-Learning روی state-action ها:
+  key = stateString + '|' + actionIndex
+  Q(s,a) ← Q(s,a) + α [ r + γ max Q(s',•) - Q(s,a) ]
+- ε-greedy برای انتخاب عمل در حالت learn/hybrid. [web:2][web:13]
+- Minimax برای محاسبه حرکت بهینه در حالت minimax و به‌عنوان fallback در حالت hybrid. [web:15][web:12]
+*/
 
-    // آمار ساده
-    const stats = { total: 0, aiWins: 0, userWins: 0, draws: 0 };
+const STORAGE_Q = 'ttt-advanced-qtable-v1';
+const STORAGE_STATS = 'ttt-advanced-stats-v1';
 
-    // الگوهای برد کاربر:
-    // هر آیتم: { state: "XO O  X  ", action: 5 }
-    // state: رشته ۹ کاراکتری شامل 'X' یا 'O' یا ' '
-    // action: ایندکسی که کاربر در آن حرکت کرده و نهایتاً این بازی را برده
-    let userWinningPatterns = [];
-
-    // ===== کمک‌ها =====
-    function stateToString(arr){
-        return arr.map(c => c ? c : ' ').join('');
+class AdvancedTicTacToeAI {
+    constructor() {
+        this.q = {};          // Q-Table: {"state|a": value}
+        this.alpha = 0.6;     // نرخ یادگیری
+        this.gamma = 0.95;    // ضریب تنزیل
+        this.epsilon = 0.9;   // شروع کاوش
+        this.epsilonMin = 0.05;
+        this.epsilonDecay = 0.9995; // با هر بازی کم می‌شود
+        this.gameHistory = []; // {state, action}
     }
 
-    function getAvailableActions(arr){
-        const res = [];
-        arr.forEach((c,i)=>{ if(!c) res.push(i); });
-        return res;
+    stateToString(board) {
+        return board.map(c => c ? c : ' ').join('');
     }
 
-    function checkWinner(arr){
+    availableActions(board) {
+        const arr = [];
+        board.forEach((c,i)=>{ if(!c) arr.push(i); });
+        return arr;
+    }
+
+    getQ(state, action) {
+        const key = state + '|' + action;
+        if (this.q[key] === undefined) this.q[key] = 0;
+        return this.q[key];
+    }
+
+    setQ(state, action, value) {
+        const key = state + '|' + action;
+        this.q[key] = value;
+    }
+
+    recordMove(state, action) {
+        this.gameHistory.push({ state, action });
+    }
+
+    // انتخاب حرکت بر اساس Q (ε-greedy)
+    chooseActionWithQ(board, training=true) {
+        const state = this.stateToString(board);
+        const actions = this.availableActions(board);
+        if (actions.length === 0) return null;
+
+        if (training && Math.random() < this.epsilon) {
+            // اکتشاف
+            return actions[Math.floor(Math.random()*actions.length)];
+        }
+        // بهره‌برداری
+        let bestA = actions[0];
+        let bestV = this.getQ(state, actions[0]);
+        for (const a of actions) {
+            const v = this.getQ(state, a);
+            if (v > bestV) {
+                bestV = v;
+                bestA = a;
+            }
+        }
+        return bestA;
+    }
+
+    // به‌روزرسانی Q بعد از پایان بازی
+    updateFromGame(result) {
+        // r از دید AI (X)
+        let finalReward = 0;
+        if (result === 'X') finalReward = +1;
+        else if (result === 'O') finalReward = -1;
+        else finalReward = 0;
+
+        // اپیزود را از آخر به اول طی می‌کنیم
+        let nextMax = 0;
+        for (let i = this.gameHistory.length-1; i >= 0; i--) {
+            const { state, action } = this.gameHistory[i];
+            const oldQ = this.getQ(state, action);
+            const target = finalReward + this.gamma * nextMax;
+            const newQ = oldQ + this.alpha * (target - oldQ);
+            this.setQ(state, action, newQ);
+
+            // برای حالت قبلی، nextMax را max_a' Q(s,a') می‌گیریم
+            const actions = [...Array(9).keys()].filter(idx => state[idx] === ' ');
+            if (actions.length === 0) nextMax = 0;
+            else {
+                let best = this.getQ(state, actions[0]);
+                for (const a2 of actions) {
+                    const v2 = this.getQ(state, a2);
+                    if (v2 > best) best = v2;
+                }
+                nextMax = best;
+            }
+        }
+
+        this.gameHistory = [];
+        // کاهش ε برای کاوش کمتر و بهره‌برداری بیشتر
+        this.epsilon = Math.max(this.epsilonMin, this.epsilon * this.epsilonDecay);
+    }
+
+    // Minimax کلاسیک برای X (AI) در برابر O (کاربر) [web:15]
+    checkWinner(board) {
         const lines = [
             [0,1,2],[3,4,5],[6,7,8],
             [0,3,6],[1,4,7],[2,5,8],
             [0,4,8],[2,4,6]
         ];
-        for(const [a,b,c] of lines){
-            if(arr[a] && arr[a]===arr[b] && arr[b]===arr[c]) return arr[a];
+        for (const [a,b,c] of lines) {
+            if (board[a] && board[a]===board[b] && board[b]===board[c]) return board[a];
         }
-        return arr.includes(null) ? null : 'draw';
+        return board.includes(null) ? null : 'draw';
     }
 
-    function highlightWin(arr){
-        const lines = [
-            [0,1,2],[3,4,5],[6,7,8],
-            [0,3,6],[1,4,7],[2,5,8],
-            [0,4,8],[2,4,6]
-        ];
-        for(const [a,b,c] of lines){
-            if(arr[a] && arr[a]===arr[b] && arr[b]===arr[c]){
-                document.querySelector(`[data-index="${a}"]`).classList.add('winner');
-                document.querySelector(`[data-index="${b}"]`).classList.add('winner');
-                document.querySelector(`[data-index="${c}"]`).classList.add('winner');
-                break;
-            }
-        }
-    }
+    minimax(board, isMaximizing) {
+        const winner = this.checkWinner(board);
+        if (winner === 'X') return { score: 1 };
+        if (winner === 'O') return { score: -1 };
+        if (winner === 'draw') return { score: 0 };
 
-    // ===== حافظه در localStorage =====
-    const STORAGE_KEY = 'ttt-ai-user-winning-patterns-v1';
-    const STATS_KEY   = 'ttt-ai-stats-v1';
-
-    function saveMemory(){
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(userWinningPatterns));
-        localStorage.setItem(STATS_KEY, JSON.stringify(stats));
-    }
-
-    function loadMemory(){
-        const m = localStorage.getItem(STORAGE_KEY);
-        if(m){
-            try{ userWinningPatterns = JSON.parse(m) || []; }catch(e){}
-        }
-        const s = localStorage.getItem(STATS_KEY);
-        if(s){
-            try{
-                const obj = JSON.parse(s);
-                stats.total   = obj.total   || 0;
-                stats.aiWins  = obj.aiWins  || 0;
-                stats.userWins= obj.userWins|| 0;
-                stats.draws   = obj.draws   || 0;
-            }catch(e){}
-        }
-        updateStatsUI();
-        updatePatternCountUI();
-    }
-
-    function resetMemory(){
-        if(!confirm('حافظه الگوهای برد کاربر پاک شود؟')) return;
-        userWinningPatterns = [];
-        localStorage.removeItem(STORAGE_KEY);
-        updatePatternCountUI();
-        setMessage('حافظه بردهای شما از AI پاک شد.');
-    }
-
-    function resetAll(){
-        if(!confirm('هم حافظه AI و هم آمار بازی‌ها پاک شود؟')) return;
-        userWinningPatterns = [];
-        stats.total = stats.aiWins = stats.userWins = stats.draws = 0;
-        localStorage.removeItem(STORAGE_KEY);
-        localStorage.removeItem(STATS_KEY);
-        updateStatsUI();
-        updatePatternCountUI();
-        startNewGame();
-        setMessage('همه‌چیز ریست شد. از نو شروع کنید.');
-    }
-
-    // ===== UI =====
-    function renderBoard(){
-        document.querySelectorAll('.cell').forEach((cell,i)=>{
-            const v = board[i];
-            cell.textContent = v ? v : '';
-            cell.className = 'cell';
-            if(v){
-                cell.classList.add('occupied');
-                cell.classList.add(v==='X' ? 'x':'o');
-            }
-        });
-    }
-
-    function setMessage(msg){
-        document.getElementById('message').textContent = msg;
-    }
-
-    function updateStatsUI(){
-        document.getElementById('totalGames').textContent = stats.total;
-        document.getElementById('aiWins').textContent    = stats.aiWins;
-        document.getElementById('userWins').textContent  = stats.userWins;
-        document.getElementById('draws').textContent     = stats.draws;
-    }
-
-    function updatePatternCountUI(){
-        document.getElementById('patternCount').textContent = userWinningPatterns.length;
-    }
-
-    // ===== منطق یادگیری از بردهای کاربر =====
-    // در هر حرکت ذخیره می‌کنیم: حالت قبل از حرکت + خانه‌ای که کاربر یا AI زد
-    let gameMoveHistory = []; // آرایه‌ای از { player, stateBefore, action }
-
-    function recordMove(player, stateBefore, action){
-        gameMoveHistory.push({ player, stateBefore, action });
-    }
-
-    // وقتی کاربر (O) برنده شد:
-    // همهٔ recordهایی که player === 'O' هستند را به userWinningPatterns اضافه می‌کنیم
-    function learnFromUserWin(){
-        for(const m of gameMoveHistory){
-            if(m.player === 'O'){
-                // اگر از قبل این الگو را نداریم، اضافه‌اش می‌کنیم
-                const exists = userWinningPatterns.some(p => p.state === m.stateBefore && p.action === m.action);
-                if(!exists){
-                    userWinningPatterns.push({ state: m.stateBefore, action: m.action });
+        const actions = this.availableActions(board);
+        if (isMaximizing) {
+            let bestScore = -Infinity;
+            let bestAction = actions[0];
+            for (const a of actions) {
+                board[a] = 'X';
+                const res = this.minimax(board, false);
+                board[a] = null;
+                if (res.score > bestScore) {
+                    bestScore = res.score;
+                    bestAction = a;
                 }
             }
+            return { score: bestScore, action: bestAction };
+        } else {
+            let bestScore = +Infinity;
+            let bestAction = actions[0];
+            for (const a of actions) {
+                board[a] = 'O';
+                const res = this.minimax(board, true);
+                board[a] = null;
+                if (res.score < bestScore) {
+                    bestScore = res.score;
+                    bestAction = a;
+                }
+            }
+            return { score: bestScore, action: bestAction };
         }
-        saveMemory();
-        updatePatternCountUI();
     }
 
-    // ===== AI: استفاده از الگوهای برد کاربر =====
-    function aiChooseAction(){
-        const currentState = stateToString(board);
-        const available = getAvailableActions(board);
-        if(available.length === 0) return null;
+    chooseActionMinimax(board) {
+        const copy = board.slice();
+        const res = this.minimax(copy, true);
+        return res.action ?? null;
+    }
 
-        // 1) ابتدا چک می‌کنیم آیا الگوی بردی از کاربر برای این state داریم یا نه
-        const matchingPatterns = userWinningPatterns.filter(p => p.state === currentState);
+    // حالت hybrid: اگر Q اعتماد کافی نداشت، از Minimax کمک بگیر
+    chooseActionHybrid(board) {
+        const state = this.stateToString(board);
+        const actions = this.availableActions(board);
+        if (actions.length === 0) return null;
 
-        // اگر الگوی دقیقاً همین state وجود داشته باشد، AI همان خانه را خودش می‌گیرد
-        for(const p of matchingPatterns){
-            if(available.includes(p.action)){
-                return p.action;
+        // یکبار Q را چک می‌کنیم
+        let bestA = actions[0];
+        let bestV = this.getQ(state, actions[0]);
+        for (const a of actions) {
+            const v = this.getQ(state, a);
+            if (v > bestV) { bestV = v; bestA = a; }
+        }
+
+        // اگر Q هنوز نزدیک صفر است (دانش کم)، Minimax را ترجیح بده
+        if (Math.abs(bestV) < 0.2) {
+            return this.chooseActionMinimax(board);
+        }
+        // وگرنه با ε-greedy از Q استفاده می‌کنیم
+        return this.chooseActionWithQ(board, true);
+    }
+
+    save() {
+        localStorage.setItem(STORAGE_Q, JSON.stringify(this.q));
+    }
+
+    load() {
+        const raw = localStorage.getItem(STORAGE_Q);
+        if (raw) {
+            try {
+                const obj = JSON.parse(raw);
+                if (obj && typeof obj === 'object') {
+                    this.q = obj;
+                }
+            } catch(e){}
+        }
+    }
+
+    reset() {
+        this.q = {};
+        this.gameHistory = [];
+        this.epsilon = 0.9;
+    }
+
+    qSize() {
+        return Object.keys(this.q).length;
+    }
+}
+
+// ===== وضعیت بازی و UI =====
+const ai = new AdvancedTicTacToeAI();
+let board = Array(9).fill(null);
+let currentPlayer = 'user';
+let gameActive = true;
+const stats = { total:0, aiWins:0, userWins:0, draws:0 };
+
+function checkWinner(board) {
+    return ai.checkWinner(board);
+}
+
+function renderBoard() {
+    document.querySelectorAll('.cell').forEach((cell,i)=>{
+        const v = board[i];
+        cell.textContent = v ? v : '';
+        cell.className = 'cell';
+        if (v) {
+            cell.classList.add('occupied');
+            cell.classList.add(v==='X' ? 'x' : 'o');
+        }
+    });
+}
+
+function highlightWin() {
+    const lines = [
+        [0,1,2],[3,4,5],[6,7,8],
+        [0,3,6],[1,4,7],[2,5,8],
+        [0,4,8],[2,4,6]
+    ];
+    for (const [a,b,c] of lines) {
+        if (board[a] && board[a]===board[b] && board[b]===board[c]) {
+            document.querySelector(`[data-index="${a}"]`).classList.add('winner');
+            document.querySelector(`[data-index="${b}"]`).classList.add('winner');
+            document.querySelector(`[data-index="${c}"]`).classList.add('winner');
+            break;
+        }
+    }
+}
+
+function setMessage(msg) {
+    document.getElementById('message').textContent = msg;
+}
+
+function updateUIStats() {
+    document.getElementById('totalGames').textContent = stats.total;
+    document.getElementById('aiWins').textContent = stats.aiWins;
+    document.getElementById('userWins').textContent = stats.userWins;
+    document.getElementById('draws').textContent = stats.draws;
+    document.getElementById('qCount').textContent = ai.qSize();
+    document.getElementById('epsilonLabel').textContent = ai.epsilon.toFixed(2);
+}
+
+function saveStats() {
+    localStorage.setItem(STORAGE_STATS, JSON.stringify(stats));
+    ai.save();
+}
+
+function loadStats() {
+    const raw = localStorage.getItem(STORAGE_STATS);
+    if (raw) {
+        try {
+            const obj = JSON.parse(raw);
+            stats.total = obj.total || 0;
+            stats.aiWins = obj.aiWins || 0;
+            stats.userWins = obj.userWins || 0;
+            stats.draws = obj.draws || 0;
+        } catch(e){}
+    }
+}
+
+// ===== پایان بازی =====
+function handleGameEndIfAny(fromAIUpdate=true) {
+    const res = checkWinner(board);
+    if (res === null) return false;
+
+    gameActive = false;
+    stats.total++;
+
+    if (res === 'X') {
+        stats.aiWins++;
+        setMessage('AI (X) برنده شد.');
+        highlightWin();
+    } else if (res === 'O') {
+        stats.userWins++;
+        setMessage('شما (O) برنده شدید!');
+        highlightWin();
+    } else {
+        stats.draws++;
+        setMessage('بازی مساوی شد.');
+    }
+
+    if (fromAIUpdate) {
+        ai.updateFromGame(res);
+    }
+
+    saveStats();
+    updateUIStats();
+    return true;
+}
+
+// ===== حرکات =====
+function onUserClick(i) {
+    if (!gameActive || currentPlayer!=='user' || board[i]) return;
+
+    const stateBefore = ai.stateToString(board);
+    board[i] = 'O';
+    // برای Q-Learning، فقط وقتی user بازی می‌کند هم می‌توانیم state را ذخیره کنیم تا AI تصویر کامل بازی را داشته باشد
+    ai.recordMove(stateBefore, i);
+    renderBoard();
+
+    if (handleGameEndIfAny()) return;
+
+    currentPlayer = 'ai';
+    setTimeout(aiMove, 250);
+}
+
+function aiMove() {
+    if (!gameActive) return;
+
+    const mode = document.getElementById('modeSelect').value;
+    let action = null;
+    const stateBefore = ai.stateToString(board);
+
+    if (mode === 'learn') {
+        action = ai.chooseActionWithQ(board, true);
+    } else if (mode === 'minimax') {
+        action = ai.chooseActionMinimax(board);
+    } else {
+        // hybrid
+        action = ai.chooseActionHybrid(board);
+    }
+
+    if (action === null) return;
+
+    board[action] = 'X';
+    ai.recordMove(stateBefore, action);
+    renderBoard();
+
+    if (handleGameEndIfAny()) return;
+
+    currentPlayer = 'user';
+    setMessage('نوبت شماست!');
+}
+
+function startNewGame() {
+    board = Array(9).fill(null);
+    gameActive = true;
+    currentPlayer = 'user';
+    ai.gameHistory = [];
+    renderBoard();
+    setMessage('نوبت شماست! شما O هستید، AI با X بازی می‌کند.');
+}
+
+// ===== آموزش Self-Play (AI با خودش بازی می‌کند) [web:2][web:18] =====
+async function trainSelfPlay() {
+    const n = parseInt(document.getElementById('trainN').value, 10) || 1000;
+    setMessage('آموزش خودکار در حال انجام (' + n + ' بازی)...');
+    gameActive = false;
+
+    for (let g=0; g<n; g++) {
+        let b = Array(9).fill(null);
+        let turn = 'X';
+        ai.gameHistory = [];
+
+        while (true) {
+            const res = checkWinner(b);
+            if (res !== null) {
+                ai.updateFromGame(res);
+                break;
+            }
+
+            let action;
+            if (turn === 'X') {
+                // X هوش اصلی است (یادگیرنده)
+                action = ai.chooseActionWithQ(b, true);
+                const st = ai.stateToString(b);
+                ai.recordMove(st, action);
+                b[action] = 'X';
+                turn = 'O';
+            } else {
+                // O نیز می‌تواند Q-Learning را استفاده کند یا تصادفی باشد
+                // برای سادگی: تصادفی + کمی Q
+                const useQ = Math.random() < 0.5;
+                if (useQ) action = ai.chooseActionWithQ(b, true);
+                else {
+                    const acts = ai.availableActions(b);
+                    if (acts.length===0) break;
+                    action = acts[Math.floor(Math.random()*acts.length)];
+                }
+                const st = ai.stateToString(b);
+                ai.recordMove(st, action);
+                b[action] = 'O';
+                turn = 'X';
             }
         }
 
-        // 2) اگر الگوی دقیقی نبود: حرکت تصادفی
-        const r = Math.floor(Math.random() * available.length);
-        return available[r];
-    }
-
-    // ===== پایان بازی =====
-    function checkGameEndAndHandle(){
-        const res = checkWinner(board);
-        if(res === null) return false;
-
-        gameActive = false;
-        stats.total++;
-
-        if(res === 'X'){
-            stats.aiWins++;
-            setMessage('AI (X) برنده شد.');
-            highlightWin(board);
-        }else if(res === 'O'){
-            stats.userWins++;
-            setMessage('شما (O) برنده شدید! الگوهای برد شما به حافظه AI اضافه شد.');
-            highlightWin(board);
-            learnFromUserWin(); // اینجا یادگیری از برد کاربر انجام می‌شود
-        }else{
-            stats.draws++;
-            setMessage('بازی مساوی شد.');
+        if (g % 200 === 0) {
+            document.getElementById('epsilonLabel').textContent = ai.epsilon.toFixed(2);
+            document.getElementById('qCount').textContent = ai.qSize();
+            await new Promise(r=>setTimeout(r,0));
         }
-
-        saveMemory();
-        updateStatsUI();
-        return true;
     }
 
-    // ===== حرکت‌ها =====
-    function onUserClickCell(i){
-        if(!gameActive || currentPlayer!=='user' || board[i]) return;
+    saveStats();
+    updateUIStats();
+    setMessage('آموزش خودکار تمام شد. حالا در حالت Hybrid یا Learn بازی کنید.');
+    startNewGame();
+}
 
-        const stateBefore = stateToString(board);
-        board[i] = 'O';
-        recordMove('O', stateBefore, i);
-        renderBoard();
+// ===== ریست‌ها =====
+function resetQOnly() {
+    if (!confirm('Q-Table پاک شود؟ AI از صفر یاد می‌گیرد.')) return;
+    ai.reset();
+    ai.save();
+    document.getElementById('qCount').textContent = ai.qSize();
+    document.getElementById('epsilonLabel').textContent = ai.epsilon.toFixed(2);
+    setMessage('Q-Table پاک شد. اکنون AI دوباره یاد می‌گیرد.');
+    startNewGame();
+}
 
-        if(checkGameEndAndHandle()) return;
+function fullReset() {
+    if (!confirm('هم Q-Table و هم آمار بازی‌ها پاک شود؟')) return;
+    ai.reset();
+    ai.save();
+    stats.total = stats.aiWins = stats.userWins = stats.draws = 0;
+    localStorage.removeItem(STORAGE_STATS);
+    updateUIStats();
+    setMessage('همه‌چیز ریست شد. از نو شروع کنید.');
+    startNewGame();
+}
 
-        currentPlayer = 'ai';
-        setTimeout(aiMove, 300);
-    }
-
-    function aiMove(){
-        if(!gameActive) return;
-
-        const stateBefore = stateToString(board);
-        const action = aiChooseAction();
-        if(action === null) return;
-
-        board[action] = 'X';
-        recordMove('X', stateBefore, action);
-        renderBoard();
-
-        if(checkGameEndAndHandle()) return;
-
-        currentPlayer = 'user';
-        setMessage('نوبت شماست!');
-    }
-
-    function startNewGame(){
-        board = Array(9).fill(null);
-        gameMoveHistory = [];
-        currentPlayer = 'user';
-        gameActive = true;
-        renderBoard();
-        setMessage('نوبت شماست! روی یک خانه کلیک کنید.');
-    }
-
-    // ===== رویدادها =====
-    document.querySelectorAll('.cell').forEach(cell=>{
-        cell.addEventListener('click', e=>{
-            const i = parseInt(e.target.dataset.index,10);
-            onUserClickCell(i);
-        });
+// ===== راه‌اندازی اولیه =====
+document.querySelectorAll('.cell').forEach(cell=>{
+    cell.addEventListener('click', e=>{
+        const i = parseInt(e.target.dataset.index,10);
+        onUserClick(i);
     });
+});
 
-    window.addEventListener('load', ()=>{
-        loadMemory();
-        startNewGame();
-    });
+window.addEventListener('load', ()=>{
+    ai.load();
+    loadStats();
+    renderBoard();
+    updateUIStats();
+    startNewGame();
+});
 </script>
 </body>
 </html>
