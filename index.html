@@ -1,624 +1,276 @@
 <!DOCTYPE html>
 <html lang="fa" dir="rtl">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>دوز - AI یادگیرنده از کاربر</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>دوز – AI واقعی یادگیرنده</title>
 
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            padding: 20px;
-        }
-
-        .container {
-            background: rgba(255, 255, 255, 0.95);
-            border-radius: 20px;
-            padding: 30px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-            max-width: 500px;
-            width: 100%;
-        }
-
-        h1 {
-            text-align: center;
-            color: #667eea;
-            margin-bottom: 10px;
-            font-size: 2.5em;
-        }
-
-        .subtitle {
-            text-align: center;
-            color: #666;
-            margin-bottom: 30px;
-            font-size: 0.9em;
-        }
-
-        .board {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 10px;
-            margin-bottom: 30px;
-            aspect-ratio: 1;
-        }
-
-        .cell {
-            background: #f0f0f0;
-            border: none;
-            border-radius: 15px;
-            font-size: 3em;
-            font-weight: bold;
-            color: #333;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            aspect-ratio: 1;
-        }
-
-        .cell:hover:not(.occupied) {
-            background: #e0e0e0;
-            transform: scale(0.95);
-        }
-
-        .cell.x {
-            color: #667eea;
-        }
-
-        .cell.o {
-            color: #764ba2;
-        }
-
-        .cell.winner {
-            background: #4CAF50;
-            color: white;
-            animation: pulse 0.6s ease-in-out;
-        }
-
-        @keyframes pulse {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.1); }
-        }
-
-        .controls {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 20px;
-        }
-
-        button {
-            flex: 1;
-            padding: 12px;
-            border: none;
-            border-radius: 10px;
-            font-size: 1em;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-
-        .btn-primary {
-            background: #667eea;
-            color: white;
-        }
-
-        .btn-primary:hover {
-            background: #5568d3;
-            transform: translateY(-2px);
-        }
-
-        .btn-secondary {
-            background: #f0f0f0;
-            color: #333;
-        }
-
-        .btn-secondary:hover {
-            background: #e0e0e0;
-        }
-
-        .btn-danger {
-            background: #f44336;
-            color: white;
-        }
-
-        .btn-danger:hover {
-            background: #d32f2f;
-        }
-
-        .stats {
-            background: #f9f9f9;
-            border-radius: 10px;
-            padding: 15px;
-            margin-bottom: 20px;
-        }
-
-        .stat-item {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 8px;
-            color: #555;
-        }
-
-        .stat-item:last-child {
-            margin-bottom: 0;
-            font-weight: bold;
-            color: #667eea;
-            padding-top: 8px;
-            border-top: 2px solid #e0e0e0;
-        }
-
-        .message {
-            text-align: center;
-            font-size: 1.2em;
-            color: #333;
-            min-height: 30px;
-            font-weight: 600;
-        }
-
-        .training {
-            display: none;
-            text-align: center;
-            color: #667eea;
-            font-weight: 600;
-            margin: 10px 0;
-        }
-
-        .progress-bar {
-            width: 100%;
-            height: 6px;
-            background: #e0e0e0;
-            border-radius: 3px;
-            overflow: hidden;
-            margin-top: 10px;
-        }
-
-        .progress-fill {
-            height: 100%;
-            background: #667eea;
-            width: 0%;
-            transition: width 0.3s ease;
-        }
-    </style>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{
+    font-family:Segoe UI,Tahoma;
+    background:linear-gradient(135deg,#667eea,#764ba2);
+    min-height:100vh;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    padding:20px
+}
+.container{
+    background:#fff;
+    border-radius:20px;
+    padding:30px;
+    max-width:480px;
+    width:100%;
+    box-shadow:0 20px 50px rgba(0,0,0,.3)
+}
+h1{text-align:center;color:#667eea;margin-bottom:10px}
+.subtitle{text-align:center;color:#666;margin-bottom:20px;font-size:.9em}
+.board{
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:10px;
+    margin:20px 0
+}
+.cell{
+    aspect-ratio:1;
+    font-size:3em;
+    border:none;
+    border-radius:14px;
+    background:#f2f2f2;
+    cursor:pointer;
+    transition:.2s;
+}
+.cell:hover:not(.filled){background:#e0e0e0}
+.cell.X{color:#667eea}
+.cell.O{color:#764ba2}
+.cell.win{background:#4caf50;color:#fff}
+.controls{display:flex;gap:10px;margin-top:15px}
+button{
+    flex:1;
+    padding:10px;
+    border:none;
+    border-radius:10px;
+    font-weight:600;
+    cursor:pointer
+}
+.primary{background:#667eea;color:#fff}
+.secondary{background:#eee}
+.danger{background:#f44336;color:#fff}
+.message{text-align:center;font-weight:600;min-height:28px}
+.stats{
+    background:#f7f7f7;
+    border-radius:10px;
+    padding:12px;
+    font-size:.85em
+}
+.stats div{display:flex;justify-content:space-between;margin:4px 0}
+</style>
 </head>
+
 <body>
-    <div class="container">
-        <h1>بازی دوز</h1>
-        <p class="subtitle">هوش مصنوعی که واقعاً از باخت به شما یاد می‌گیرد!</p>
-        
-        <div class="stats">
-            <div class="stat-item">
-                <span>بازی‌های انجام شده:</span>
-                <span id="totalGames">0</span>
-            </div>
-            <div class="stat-item">
-                <span>بردهای AI:</span>
-                <span id="aiWins">0</span>
-            </div>
-            <div class="stat-item">
-                <span>بردهای شما:</span>
-                <span id="userWins">0</span>
-            </div>
-            <div class="stat-item">
-                <span>مساوی‌ها:</span>
-                <span id="draws">0</span>
-            </div>
-            <div class="stat-item">
-                <span>زمان آخرین بازی:</span>
-                <span id="lastGameTime">۰۰:۰۰</span>
-            </div>
-            <div class="stat-item">
-                <span>میانگین زمان بازی:</span>
-                <span id="avgGameTime">۰۰:۰۰</span>
-            </div>
-            <div class="stat-item">
-                <span>نرخ کاوش (ε):</span>
-                <span id="epsilon">0.95</span>
-            </div>
-        </div>
+<div class="container">
+<h1>دوز</h1>
+<p class="subtitle">هوش مصنوعی که واقعاً از باخت یاد می‌گیره</p>
 
-        <div class="board" id="board">
-            <button class="cell" data-index="0"></button>
-            <button class="cell" data-index="1"></button>
-            <button class="cell" data-index="2"></button>
-            <button class="cell" data-index="3"></button>
-            <button class="cell" data-index="4"></button>
-            <button class="cell" data-index="5"></button>
-            <button class="cell" data-index="6"></button>
-            <button class="cell" data-index="7"></button>
-            <button class="cell" data-index="8"></button>
-        </div>
+<div class="stats">
+<div><span>بازی‌ها</span><span id="g">0</span></div>
+<div><span>برد AI</span><span id="aw">0</span></div>
+<div><span>برد شما</span><span id="uw">0</span></div>
+<div><span>مساوی</span><span id="d">0</span></div>
+<div><span>ε</span><span id="e">1.00</span></div>
+</div>
 
-        <div class="message" id="message">نوبت شماست! روی هر خانه کلیک کنید.</div>
+<div class="board" id="board"></div>
+<div class="message" id="msg"></div>
 
-        <div class="training" id="training">
-            در حال آموزش هوش مصنوعی... <span id="trainingProgress">0</span> بازی
-            <div class="progress-bar">
-                <div class="progress-fill" id="progressFill"></div>
-            </div>
-        </div>
+<div class="controls">
+<button class="primary" onclick="newGame()">بازی جدید</button>
+<button class="secondary" onclick="train(2000)">آموزش ×2000</button>
+<button class="danger" onclick="resetAI()">ریست AI</button>
+</div>
+</div>
 
-        <div class="controls">
-            <button class="btn-primary" onclick="startNewGame()">بازی جدید</button>
-            <button class="btn-secondary" onclick="trainAI(1000)">آموزش سریع ×۱۰۰۰</button>
-            <button class="btn-danger" onclick="resetLearning()">پاک کردن دانش</button>
-        </div>
-    </div>
+<script>
+/* ================= Q-Learning AI ================= */
 
-    <script>
-        // ==================== هوش مصنوعی (اصلاح‌شده و درست) ====================
-        class TicTacToeAI {
-            constructor() {
-                this.qTable = {};           // state|action → Q-value
-                this.visitCounts = {};      // شمارش بازدید هر (state, action)
-                this.epsilon = 0.95;        // شروع با کاوش بالا (ضعیف)
-                this.epsilonMin = 0.02;
-                this.epsilonDecay = 0.998;
-                this.alpha = 0.5;           // نرخ یادگیری
-                this.gameHistory = [];      // فقط حرکات AI ذخیره می‌شه
-            }
+class QLearningAI {
+    constructor(){
+        this.q = {};
+        this.epsilon = 1.0;
+        this.epsilonMin = 0.05;
+        this.epsilonDecay = 0.995;
+        this.alpha = 0.4;
+        this.history = [];
+    }
 
-            stateToString(board) {
-                return board.map(cell => cell || ' ').join('');
-            }
+    key(state,action){ return state + "|" + action }
 
-            availableActions(board) {
-                return board.map((cell, idx) => cell === null ? idx : null)
-                           .filter(idx => idx !== null);
-            }
+    getQ(state,action){
+        const k = this.key(state,action);
+        if(this.q[k] === undefined) this.q[k] = 0;
+        return this.q[k];
+    }
 
-            getQValue(state, action) {
-                const key = `\( {state}| \){action}`;
-                if (this.qTable[key] === undefined) {
-                    this.qTable[key] = 0.0;
-                }
-                return this.qTable[key];
-            }
-
-            chooseAction(board, training = true) {
-                const state = this.stateToString(board);
-                const actions = this.availableActions(board);
-                
-                if (actions.length === 0) return null;
-
-                // ε-greedy
-                if (training && Math.random() < this.epsilon) {
-                    return actions[Math.floor(Math.random() * actions.length)];
-                }
-
-                // بهترین حرکت بر اساس Q
-                let bestAction = actions[0];
-                let bestValue = -Infinity;
-                for (let action of actions) {
-                    const value = this.getQValue(state, action);
-                    if (value > bestValue) {
-                        bestValue = value;
-                        bestAction = action;
-                    }
-                }
-                return bestAction;
-            }
-
-            // فقط حرکت AI ثبت می‌شه
-            recordMove(previousBoard, action) {
-                const state = this.stateToString(previousBoard);
-                this.gameHistory.push({ state, action });
-                const key = `\( {state}| \){action}`;
-                this.visitCounts[key] = (this.visitCounts[key] || 0) + 1;
-            }
-
-            // به‌روزرسانی فقط برای حرکات AI
-            updateFromGame(finalResult) {
-                // پاداش از دید AI (X)
-                const reward = finalResult === 'X' ? 1 : (finalResult === 'O' ? -1 : 0);
-
-                for (let i = this.gameHistory.length - 1; i >= 0; i--) {
-                    const { state, action } = this.gameHistory[i];
-                    const key = `\( {state}| \){action}`;
-                    const visitCount = this.visitCounts[key] || 1;
-                    const adaptiveAlpha = this.alpha / (1 + 0.02 * visitCount);
-
-                    const oldQ = this.qTable[key] || 0;
-                    this.qTable[key] = oldQ + adaptiveAlpha * (reward - oldQ);
-                }
-
-                this.gameHistory = [];
-                this.epsilon = Math.max(this.epsilonMin, this.epsilon * this.epsilonDecay);
-            }
-
-            checkWinner(board) {
-                const lines = [
-                    [0,1,2],[3,4,5],[6,7,8],
-                    [0,3,6],[1,4,7],[2,5,8],
-                    [0,4,8],[2,4,6]
-                ];
-                for (let [a,b,c] of lines) {
-                    if (board[a] && board[a] === board[b] && board[a] === board[c]) {
-                        return board[a];
-                    }
-                }
-                return board.includes(null) ? null : 'draw';
-            }
-
-            saveToStorage() {
-                const data = {
-                    qTable: this.qTable,
-                    visitCounts: this.visitCounts,
-                    epsilon: this.epsilon,
-                    gamesPlayed: gameStats.totalGames,
-                    wins: gameStats.aiWins,
-                    losses: gameStats.userWins,
-                    draws: gameStats.draws,
-                    totalTime: gameStats.totalTime,
-                    gameTimes: gameStats.gameTimes
-                };
-                localStorage.setItem('ttt-ai-fixed-v1', JSON.stringify(data));
-            }
-
-            loadFromStorage() {
-                const saved = localStorage.getItem('ttt-ai-fixed-v1');
-                if (saved) {
-                    try {
-                        const data = JSON.parse(saved);
-                        this.qTable = data.qTable || {};
-                        this.visitCounts = data.visitCounts || {};
-                        this.epsilon = data.epsilon || 0.95;
-                        gameStats.totalGames = data.gamesPlayed || 0;
-                        gameStats.aiWins = data.wins || 0;
-                        gameStats.userWins = data.losses || 0;
-                        gameStats.draws = data.draws || 0;
-                        gameStats.totalTime = data.totalTime || 0;
-                        gameStats.gameTimes = data.gameTimes || [];
-                        updateStats();
-                        return true;
-                    } catch (e) {
-                        console.error('خطا در بارگذاری:', e);
-                    }
-                }
-                return false;
-            }
-
-            reset() {
-                this.qTable = {};
-                this.visitCounts = {};
-                this.epsilon = 0.95;
-                this.gameHistory = [];
-            }
+    choose(board,train=true){
+        const state = board.join('');
+        const moves = board.map((c,i)=>c===''?i:null).filter(i=>i!==null);
+        if(train && Math.random()<this.epsilon){
+            return moves[Math.floor(Math.random()*moves.length)];
         }
-
-        // ==================== وضعیت بازی ====================
-        const ai = new TicTacToeAI();
-        let board = Array(9).fill(null);
-        let currentPlayer = 'user'; // user = O, ai = X
-        let gameActive = false;
-        let gameStartTime = null;
-        let timerInterval = null;
-
-        const gameStats = {
-            totalGames: 0,
-            aiWins: 0,
-            userWins: 0,
-            draws: 0,
-            totalTime: 0,
-            gameTimes: []
-        };
-
-        // ==================== توابع زمان ====================
-        function formatTime(seconds) {
-            const mins = Math.floor(seconds / 60);
-            const secs = Math.floor(seconds % 60);
-            return `\( {mins.toString().padStart(2, '0')}: \){secs.toString().padStart(2, '0')}`;
+        let best = moves[0], bestVal = -Infinity;
+        for(const m of moves){
+            const v = this.getQ(state,m);
+            if(v>bestVal){bestVal=v;best=m}
         }
+        return best;
+    }
 
-        function startTimer() {
-            gameStartTime = Date.now();
-            timerInterval = setInterval(() => {
-                if (gameActive) {
-                    const elapsed = Math.floor((Date.now() - gameStartTime) / 1000);
-                    const turnText = currentPlayer === 'user' ? 'شما' : 'AI';
-                    showMessage(`نوبت \( {turnText} | زمان: \){formatTime(elapsed)}`);
-                }
-            }, 500);
+    record(board,action){
+        this.history.push({state:board.join(''),action});
+    }
+
+    learn(result){
+        const reward = result==='X'?1:result==='O'?-1:0.3;
+        for(const step of this.history){
+            const k = this.key(step.state,step.action);
+            this.q[k] += this.alpha * (reward - this.q[k]);
         }
+        this.history=[];
+        this.epsilon = Math.max(this.epsilonMin,this.epsilon*this.epsilonDecay);
+        this.save();
+    }
 
-        function stopTimer() {
-            if (timerInterval) clearInterval(timerInterval);
-            if (gameStartTime) {
-                const duration = Math.floor((Date.now() - gameStartTime) / 1000);
-                gameStats.totalTime += duration;
-                gameStats.gameTimes.push(duration);
-                updateStats();
-            }
+    save(){
+        localStorage.setItem("ttt-ai",JSON.stringify({
+            q:this.q,epsilon:this.epsilon,stats
+        }));
+    }
+
+    load(){
+        const d = localStorage.getItem("ttt-ai");
+        if(!d) return;
+        const s = JSON.parse(d);
+        this.q = s.q || {};
+        this.epsilon = s.epsilon || 1;
+        Object.assign(stats,s.stats||{});
+    }
+
+    reset(){
+        this.q={}; this.epsilon=1; this.history=[];
+        localStorage.removeItem("ttt-ai");
+    }
+}
+
+/* ================= Game Logic ================= */
+
+const ai = new QLearningAI();
+const boardEl = document.getElementById("board");
+const msg = document.getElementById("msg");
+
+let board, turn, active;
+
+const stats = {g:0,aw:0,uw:0,d:0};
+
+function drawBoard(){
+    boardEl.innerHTML='';
+    board.forEach((c,i)=>{
+        const b=document.createElement("button");
+        b.className="cell"+(c?' filled '+c:'');
+        b.textContent=c;
+        b.onclick=()=>playerMove(i);
+        boardEl.appendChild(b);
+    });
+}
+
+function check(){
+    const w=[[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
+    for(const [a,b,c] of w){
+        if(board[a]&&board[a]===board[b]&&board[a]===board[c]) return board[a];
+    }
+    return board.includes('')?null:'draw';
+}
+
+function playerMove(i){
+    if(!active||turn!=='O'||board[i])return;
+    board[i]='O'; turn='X'; drawBoard();
+    endOrAI();
+}
+
+function aiMove(){
+    const before=[...board];
+    const a=ai.choose(board,true);
+    board[a]='X';
+    ai.record(before,a);
+    turn='O';
+    drawBoard();
+    endOrAI();
+}
+
+function endOrAI(){
+    const r=check();
+    if(r){
+        active=false;
+        stats.g++;
+        if(r==='X'){stats.aw++;msg.textContent="AI برد 😈"}
+        else if(r==='O'){stats.uw++;msg.textContent="بردی! 🔥"}
+        else{stats.d++;msg.textContent="مساوی 🤝"}
+        ai.learn(r);
+        updateStats();
+    } else if(turn==='X'){
+        setTimeout(aiMove,300);
+    }
+}
+
+function newGame(){
+    board=Array(9).fill('');
+    turn=Math.random()<0.5?'X':'O';
+    active=true;
+    ai.history=[];
+    drawBoard();
+    msg.textContent=turn==='O'?"نوبت توئه":"AI شروع کرد";
+    if(turn==='X') setTimeout(aiMove,300);
+}
+
+function updateStats(){
+    g.textContent=stats.g;
+    aw.textContent=stats.aw;
+    uw.textContent=stats.uw;
+    d.textContent=stats.d;
+    e.textContent=ai.epsilon.toFixed(3);
+}
+
+function train(n){
+    for(let i=0;i<n;i++){
+        let b=Array(9).fill('');
+        ai.history=[];
+        let t='X';
+        while(true){
+            const r=check.call({board:b});
+            if(r){ai.learn(r);break;}
+            const before=[...b];
+            const a=ai.choose(b,true);
+            b[a]=t;
+            if(t==='X') ai.record(before,a);
+            t=t==='X'?'O':'X';
         }
+    }
+    updateStats();
+    msg.textContent="آموزش تموم شد 🧠";
+}
 
-        // ==================== UI ====================
-        function renderBoard() {
-            document.querySelectorAll('.cell').forEach((cell, i) => {
-                cell.textContent = board[i] || '';
-                cell.classList.remove('x', 'o', 'occupied', 'winner');
-                if (board[i]) {
-                    cell.classList.add('occupied', board[i] === 'X' ? 'x' : 'o');
-                }
-            });
-        }
+function resetAI(){
+    if(confirm("همه‌چی پاک بشه؟")){
+        ai.reset();
+        stats.g=stats.aw=stats.uw=stats.d=0;
+        updateStats();
+        newGame();
+    }
+}
 
-        function updateStats() {
-            document.getElementById('totalGames').textContent = gameStats.totalGames;
-            document.getElementById('aiWins').textContent = gameStats.aiWins;
-            document.getElementById('userWins').textContent = gameStats.userWins;
-            document.getElementById('draws').textContent = gameStats.draws;
-            document.getElementById('epsilon').textContent = ai.epsilon.toFixed(3);
-
-            const last = gameStats.gameTimes.length ? gameStats.gameTimes.slice(-1)[0] : 0;
-            document.getElementById('lastGameTime').textContent = formatTime(last);
-
-            const avg = gameStats.totalGames ? Math.floor(gameStats.totalTime / gameStats.totalGames) : 0;
-            document.getElementById('avgGameTime').textContent = formatTime(avg);
-        }
-
-        function showMessage(msg) {
-            document.getElementById('message').textContent = msg;
-        }
-
-        function showTraining(show = true) {
-            document.getElementById('training').style.display = show ? 'block' : 'none';
-        }
-
-        function updateProgress(cur, total) {
-            document.getElementById('trainingProgress').textContent = cur;
-            document.getElementById('progressFill').style.width = (cur / total * 100) + '%';
-        }
-
-        function highlightWinner(winner) {
-            const lines = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
-            for (let [a,b,c] of lines) {
-                if (board[a] && board[a] === board[b] && board[a] === board[c]) {
-                    [a,b,c].forEach(i => document.querySelector(`[data-index="${i}"]`).classList.add('winner'));
-                    break;
-                }
-            }
-        }
-
-        // ==================== منطق بازی ====================
-        function checkGameEnd() {
-            const result = ai.checkWinner(board);
-            if (!result) return false;
-
-            stopTimer();
-            gameStats.totalGames++;
-
-            if (result === 'X') {
-                gameStats.aiWins++;
-                highlightWinner('X');
-                showMessage("AI برنده شد! 🎉");
-            } else if (result === 'O') {
-                gameStats.userWins++;
-                highlightWinner('O');
-                showMessage("شما برنده شدید! تبریک! 🎊");
-            } else {
-                gameStats.draws++;
-                showMessage("مساوی شد! 🤝");
-            }
-
-            ai.updateFromGame(result);
-            ai.saveToStorage();
-            updateStats();
-            gameActive = false;
-            return true;
-        }
-
-        function aiMove() {
-            if (!gameActive) return;
-
-            // ذخیره board قبل از حرکت AI
-            const boardBeforeMove = [...board];
-
-            const action = ai.chooseAction(board, false);
-            if (action !== null) {
-                board[action] = 'X';
-                ai.recordMove(boardBeforeMove, action);  // ثبت حرکت AI
-                renderBoard();
-
-                if (!checkGameEnd()) {
-                    currentPlayer = 'user';
-                }
-            }
-        }
-
-        function handleCellClick(idx) {
-            if (!gameActive || currentPlayer !== 'user' || board[idx]) return;
-
-            board[idx] = 'O';
-            renderBoard();
-
-            if (!checkGameEnd()) {
-                currentPlayer = 'ai';
-                setTimeout(aiMove, 600);
-            }
-        }
-
-        function startNewGame() {
-            board = Array(9).fill(null);
-            currentPlayer = 'user';
-            gameActive = true;
-            renderBoard();
-            showMessage("نوبت شماست!");
-            startTimer();
-        }
-
-        // ==================== آموزش خودکار (self-play) ====================
-        async function trainAI(numGames) {
-            showTraining(true);
-            const startEpsilon = ai.epsilon;
-
-            for (let i = 0; i < numGames; i++) {
-                let trainingBoard = Array(9).fill(null);
-                let player = 'X'; // AI همیشه X در self-play
-                ai.gameHistory = [];
-
-                while (true) {
-                    const result = ai.checkWinner(trainingBoard);
-                    if (result !== null) {
-                        ai.updateFromGame(result);
-                        break;
-                    }
-
-                    const boardBefore = [...trainingBoard];
-                    const action = ai.chooseAction(trainingBoard, true);
-                    if (action === null) break;
-
-                    trainingBoard[action] = player;
-                    if (player === 'X') {
-                        ai.recordMove(boardBefore, action);
-                    }
-                    player = player === 'X' ? 'O' : 'X';
-                }
-
-                if (i % 50 === 0) {
-                    updateProgress(i + 1, numGames);
-                    await new Promise(r => setTimeout(r, 0));
-                }
-            }
-
-            updateProgress(numGames, numGames);
-            showTraining(false);
-            ai.saveToStorage();
-            showMessage(`آموزش کامل! ε از \( {startEpsilon.toFixed(3)} به \){ai.epsilon.toFixed(3)} رسید`);
-        }
-
-        function resetLearning() {
-            if (confirm('تمام دانش AI و آمار پاک شود؟')) {
-                ai.reset();
-                Object.assign(gameStats, { totalGames:0, aiWins:0, userWins:0, draws:0, totalTime:0, gameTimes:[] });
-                localStorage.removeItem('ttt-ai-fixed-v1');
-                updateStats();
-                startNewGame();
-                showMessage("دانش پاک شد — AI دوباره تازه‌کار است!");
-            }
-        }
-
-        // ==================== رویدادها ====================
-        document.querySelectorAll('.cell').forEach(cell => {
-            cell.addEventListener('click', e => {
-                const idx = parseInt(e.target.dataset.index);
-                handleCellClick(idx);
-            });
-        });
-
-        window.addEventListener('load', () => {
-            ai.loadFromStorage();
-            startNewGame();
-        });
-    </script>
+ai.load();
+updateStats();
+newGame();
+</script>
 </body>
 </html>
